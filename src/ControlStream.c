@@ -1153,7 +1153,7 @@ static void controlReceiveThreadFunc(void* context) {
                         // assume the server died tragically, so go ahead and tear down.
                         PltUnlockMutex(&enetMutex);
                         Limelog("Disconnect event timeout expired\n");
-                        ListenerCallbacks.connectionTerminated(-1);
+                        LiReportConnectionTermination(TERMINATION_ORIGIN_CONTROL_STREAM, -1, 0);
                         return;
                     }
                 }
@@ -1175,7 +1175,7 @@ static void controlReceiveThreadFunc(void* context) {
 
             err = LastSocketFail();
             Limelog("Control stream connection failed: %d\n", err);
-            ListenerCallbacks.connectionTerminated(err);
+            LiReportConnectionTermination(TERMINATION_ORIGIN_CONTROL_STREAM, err, 0);
             return;
         }
 
@@ -1346,7 +1346,7 @@ static void controlReceiveThreadFunc(void* context) {
                 PltLockMutex(&enetMutex);
                 enet_peer_disconnect_now(peer, 0);
                 PltUnlockMutex(&enetMutex);
-                ListenerCallbacks.connectionTerminated((int)terminationErrorCode);
+                LiReportConnectionTermination(TERMINATION_ORIGIN_SERVER_TERMINATION, (int)terminationErrorCode, 0);
                 free(ctlHdr);
                 return;
             }
@@ -1355,7 +1355,7 @@ static void controlReceiveThreadFunc(void* context) {
         }
         else if (event.type == ENET_EVENT_TYPE_DISCONNECT) {
             Limelog("Control stream received unexpected disconnect event\n");
-            ListenerCallbacks.connectionTerminated(-1);
+            LiReportConnectionTermination(TERMINATION_ORIGIN_LOSS_STATS, -1, 0);
             return;
         }
     }
@@ -1388,7 +1388,7 @@ static void lossStatsThreadFunc(void* context) {
                                          ENET_PACKET_FLAG_UNSEQUENCED,
                                          LbqGetItemCount(&frameFecStatusQueue) > 0)) {
                         Limelog("Loss Stats: Sending frame FEC status message failed: %d\n", (int)LastSocketError());
-                        ListenerCallbacks.connectionTerminated(LastSocketFail());
+                        LiReportConnectionTermination(TERMINATION_ORIGIN_LOSS_STATS, LastSocketFail(), 0);
                         free(queuedFrameStatus);
                         return;
                     }
@@ -1410,7 +1410,7 @@ static void lossStatsThreadFunc(void* context) {
                                       ENET_PACKET_FLAG_RELIABLE,
                                       false)) {
                 Limelog("Loss Stats: Transaction failed: %d\n", (int)LastSocketError());
-                ListenerCallbacks.connectionTerminated(LastSocketFail());
+                LiReportConnectionTermination(TERMINATION_ORIGIN_LOSS_STATS, LastSocketFail(), 0);
                 return;
             }
 
@@ -1427,7 +1427,7 @@ static void lossStatsThreadFunc(void* context) {
         lossStatsPayload = malloc(payloadLengths[IDX_LOSS_STATS]);
         if (lossStatsPayload == NULL) {
             Limelog("Loss Stats: malloc() failed\n");
-            ListenerCallbacks.connectionTerminated(-1);
+            LiReportConnectionTermination(TERMINATION_ORIGIN_CONTROL_STREAM, -1, 0);
             return;
         }
 
@@ -1451,7 +1451,7 @@ static void lossStatsThreadFunc(void* context) {
                                       false)) {
                 free(lossStatsPayload);
                 Limelog("Loss Stats: Transaction failed: %d\n", (int)LastSocketError());
-                ListenerCallbacks.connectionTerminated(LastSocketFail());
+                LiReportConnectionTermination(TERMINATION_ORIGIN_LOSS_STATS, LastSocketFail(), 0);
                 return;
             }
 
@@ -1490,7 +1490,7 @@ static void requestIdrFrame(void) {
                                         ENET_PACKET_FLAG_RELIABLE,
                                         false)) {
             Limelog("Request IDR Frame: Transaction failed: %d\n", (int)LastSocketError());
-            ListenerCallbacks.connectionTerminated(LastSocketFail());
+            LiReportConnectionTermination(TERMINATION_ORIGIN_IDR_REQUEST, LastSocketFail(), 0);
             return;
         }
     }
@@ -1503,7 +1503,7 @@ static void requestIdrFrame(void) {
                                         ENET_PACKET_FLAG_RELIABLE,
                                         false)) {
             Limelog("Request IDR Frame: Transaction failed: %d\n", (int)LastSocketError());
-            ListenerCallbacks.connectionTerminated(LastSocketFail());
+            LiReportConnectionTermination(TERMINATION_ORIGIN_IDR_REQUEST, LastSocketFail(), 0);
             return;
         }
     }
@@ -1528,7 +1528,7 @@ static void requestInvalidateReferenceFrames(uint32_t startFrame, uint32_t endFr
                                     ENET_PACKET_FLAG_RELIABLE,
                                     false)) {
         Limelog("Request Invaldiate Reference Frames: Transaction failed: %d\n", (int)LastSocketError());
-        ListenerCallbacks.connectionTerminated(LastSocketFail());
+        LiReportConnectionTermination(TERMINATION_ORIGIN_IDR_REQUEST, LastSocketFail(), 0);
         return;
     }
 

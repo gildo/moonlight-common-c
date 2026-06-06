@@ -5,6 +5,7 @@ static ConnListenerConnectionTerminated originalTerminationCallback;
 static bool alreadyTerminated;
 static PLT_THREAD terminationCallbackThread;
 static int terminationCallbackErrorCode;
+static TERMINATION_SNAPSHOT lastTerminationSnapshot;
 
 // Common globals
 char* RemoteAddrString;
@@ -177,6 +178,27 @@ static void ClInternalConnectionTerminated(int errorCode)
 
     // Detach the thread since we never wait on it
     PltDetachThread(&terminationCallbackThread);
+}
+
+void LiReportConnectionTerminationEx(TERMINATION_ORIGIN origin, int errorCode, int socketError, const char* sourceFile, int sourceLine)
+{
+    memset(&lastTerminationSnapshot, 0, sizeof(lastTerminationSnapshot));
+    lastTerminationSnapshot.origin = origin;
+    lastTerminationSnapshot.errorCode = errorCode;
+    lastTerminationSnapshot.socketError = socketError;
+    lastTerminationSnapshot.bitrateKbps = StreamConfig.bitrate;
+    lastTerminationSnapshot.codec = NegotiatedVideoFormat;
+    lastTerminationSnapshot.sourceFile = sourceFile;
+    lastTerminationSnapshot.sourceLine = sourceLine;
+    ListenerCallbacks.connectionTerminated(errorCode);
+}
+
+void LiGetLastTerminationSnapshot(PTERMINATION_SNAPSHOT snapshot)
+{
+    if (snapshot == NULL) {
+        return;
+    }
+    memcpy(snapshot, &lastTerminationSnapshot, sizeof(*snapshot));
 }
 
 static bool parseRtspPortNumberFromUrl(const char* rtspSessionUrl, uint16_t* port)

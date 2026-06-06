@@ -262,7 +262,7 @@ static void AudioReceiveThreadProc(void* context) {
             packet = (PQUEUED_AUDIO_PACKET)malloc(sizeof(*packet));
             if (packet == NULL) {
                 Limelog("Audio Receive: malloc() failed\n");
-                ListenerCallbacks.connectionTerminated(-1);
+                LiReportConnectionTermination(TERMINATION_ORIGIN_AUDIO_RECEIVE, -1, 0);
                 break;
             }
         }
@@ -270,7 +270,7 @@ static void AudioReceiveThreadProc(void* context) {
         packet->header.size = recvUdpSocket(rtpSocket, &packet->data[0], MAX_PACKET_SIZE, useSelect);
         if (packet->header.size < 0) {
             Limelog("Audio Receive: recvUdpSocket() failed: %d\n", (int)LastSocketError());
-            ListenerCallbacks.connectionTerminated(LastSocketFail());
+            LiReportConnectionTermination(TERMINATION_ORIGIN_AUDIO_RECEIVE, LastSocketFail(), 0);
             break;
         }
         else if (packet->header.size == 0) {

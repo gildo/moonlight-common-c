@@ -503,6 +503,40 @@ typedef struct _CONNECTION_LISTENER_CALLBACKS {
     ConnListenerSetAdaptiveTriggers setAdaptiveTriggers;
 } CONNECTION_LISTENER_CALLBACKS, *PCONNECTION_LISTENER_CALLBACKS;
 
+typedef enum _TERMINATION_ORIGIN {
+    TERMINATION_ORIGIN_UNKNOWN = 0,
+    TERMINATION_ORIGIN_CONTROL_STREAM = 1,
+    TERMINATION_ORIGIN_LOSS_STATS = 2,
+    TERMINATION_ORIGIN_IDR_REQUEST = 3,
+    TERMINATION_ORIGIN_VIDEO_RECEIVE = 4,
+    TERMINATION_ORIGIN_AUDIO_RECEIVE = 5,
+    TERMINATION_ORIGIN_SERVER_TERMINATION = 6,
+    TERMINATION_ORIGIN_DECODER_REQUEST = 7,
+    TERMINATION_ORIGIN_UI_USER_STOP = 8,
+    TERMINATION_ORIGIN_INPUT_STREAM = 9
+} TERMINATION_ORIGIN;
+
+typedef struct _TERMINATION_SNAPSHOT {
+    TERMINATION_ORIGIN origin;
+    int errorCode;
+    int socketError;
+    unsigned long long lastVideoTimestampMs;
+    unsigned long long lastAudioTimestampMs;
+    unsigned long long lastControlTimestampMs;
+    unsigned int lastFrameIndex;
+    int bitrateKbps;
+    int codec;
+    int queueDepth;
+    const char* sourceFile;
+    int sourceLine;
+} TERMINATION_SNAPSHOT, *PTERMINATION_SNAPSHOT;
+
+void LiReportConnectionTerminationEx(TERMINATION_ORIGIN origin, int errorCode, int socketError, const char* sourceFile, int sourceLine);
+void LiGetLastTerminationSnapshot(PTERMINATION_SNAPSHOT snapshot);
+
+#define LiReportConnectionTermination(origin, errorCode, socketError) \
+    LiReportConnectionTerminationEx((origin), (errorCode), (socketError), __FILE__, __LINE__)
+
 // Use this function to zero the connection callbacks when allocated on the stack or heap
 void LiInitializeConnectionCallbacks(PCONNECTION_LISTENER_CALLBACKS clCallbacks);
 

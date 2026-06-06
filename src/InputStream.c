@@ -246,7 +246,7 @@ static bool sendInputPacket(PPACKET_HOLDER holder, bool moreData) {
                                                         moreData);
         if (err < 0) {
             Limelog("Input: sendInputPacketOnControlStream() failed: %d\n", (int) err);
-            ListenerCallbacks.connectionTerminated(err);
+            LiReportConnectionTermination(TERMINATION_ORIGIN_INPUT_STREAM, err, 0);
             return false;
         }
     }
@@ -261,7 +261,7 @@ static bool sendInputPacket(PPACKET_HOLDER holder, bool moreData) {
             (unsigned char*)&encryptedBuffer[sizeof(encryptedLengthPrefix)], (int*)&encryptedSize);
         if (err != 0) {
             Limelog("Input: Encryption failed: %d\n", (int)err);
-            ListenerCallbacks.connectionTerminated(err);
+            LiReportConnectionTermination(TERMINATION_ORIGIN_INPUT_STREAM, err, 0);
             return false;
         }
 
@@ -275,7 +275,7 @@ static bool sendInputPacket(PPACKET_HOLDER holder, bool moreData) {
                 (int) (encryptedSize + sizeof(encryptedLengthPrefix)), 0);
             if (err <= 0) {
                 Limelog("Input: send() failed: %d\n", (int) LastSocketError());
-                ListenerCallbacks.connectionTerminated(LastSocketFail());
+                LiReportConnectionTermination(TERMINATION_ORIGIN_INPUT_STREAM, LastSocketFail(), 0);
                 return false;
             }
         }
@@ -297,7 +297,7 @@ static bool sendInputPacket(PPACKET_HOLDER holder, bool moreData) {
                                                             moreData);
             if (err < 0) {
                 Limelog("Input: sendInputPacketOnControlStream() failed: %d\n", (int) err);
-                ListenerCallbacks.connectionTerminated(err);
+                LiReportConnectionTermination(TERMINATION_ORIGIN_INPUT_STREAM, err, 0);
                 return false;
             }
         }

@@ -113,7 +113,7 @@ static void VideoReceiveThreadProc(void* context) {
         encryptedBuffer = (char*)malloc(receiveSize);
         if (encryptedBuffer == NULL) {
             Limelog("Video Receive: malloc() failed\n");
-            ListenerCallbacks.connectionTerminated(-1);
+            LiReportConnectionTermination(TERMINATION_ORIGIN_VIDEO_RECEIVE, -1, 0);
             return;
         }
     }
@@ -129,7 +129,7 @@ static void VideoReceiveThreadProc(void* context) {
             buffer = (char*)malloc(bufferSize);
             if (buffer == NULL) {
                 Limelog("Video Receive: malloc() failed\n");
-                ListenerCallbacks.connectionTerminated(-1);
+                LiReportConnectionTermination(TERMINATION_ORIGIN_VIDEO_RECEIVE, -1, 0);
                 break;
             }
         }
@@ -140,7 +140,7 @@ static void VideoReceiveThreadProc(void* context) {
                             useSelect);
         if (err < 0) {
             Limelog("Video Receive: recvUdpSocket() failed: %d\n", (int)LastSocketError());
-            ListenerCallbacks.connectionTerminated(LastSocketFail());
+            LiReportConnectionTermination(TERMINATION_ORIGIN_VIDEO_RECEIVE, LastSocketFail(), 0);
             break;
         }
         else if  (err == 0) {
@@ -150,7 +150,7 @@ static void VideoReceiveThreadProc(void* context) {
                 waitingForVideoMs += UDP_RECV_POLL_TIMEOUT_MS;
                 if (waitingForVideoMs >= FIRST_FRAME_TIMEOUT_SEC * 1000) {
                     Limelog("Terminating connection due to lack of video traffic\n");
-                    ListenerCallbacks.connectionTerminated(ML_ERROR_NO_VIDEO_TRAFFIC);
+                    LiReportConnectionTermination(TERMINATION_ORIGIN_VIDEO_RECEIVE, ML_ERROR_NO_VIDEO_TRAFFIC, 0);
                     break;
                 }
             }
@@ -170,7 +170,7 @@ static void VideoReceiveThreadProc(void* context) {
         if (!receivedFullFrame) {
             if (PltGetMillis() - firstDataTimeMs >= FIRST_FRAME_TIMEOUT_SEC * 1000) {
                 Limelog("Terminating connection due to lack of a successful video frame\n");
-                ListenerCallbacks.connectionTerminated(ML_ERROR_NO_VIDEO_FRAME);
+                LiReportConnectionTermination(TERMINATION_ORIGIN_VIDEO_RECEIVE, ML_ERROR_NO_VIDEO_FRAME, 0);
                 break;
             }
         }
